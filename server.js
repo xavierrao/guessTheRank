@@ -52,7 +52,7 @@ function generateGameId() {
 }
 
 const globalUsedQuestions = new Set();
-const questionCache = []; // Cache to store unique questions (strings)
+const questionCache = [];
 
 async function selectQuestion(gameId) {
     const game = games[gameId];
@@ -319,20 +319,15 @@ io.on('connection', (socket) => {
         }
         game.rankings[socket.playerName] = ranking;
         console.log(`Game ${gameId}: ${socket.playerName} submitted ranking`);
-
-        // Send confirmation to the submitting player only
         socket.emit('rankingSubmitted', true);
-
         if (Object.keys(game.rankings).length === game.players.length) {
             setNextReveal(gameId);
         }
-        // Do NOT broadcast game state here to avoid disrupting other players
     });
 
     function setNextReveal(gameId) {
         const game = games[gameId];
         if (game.currentRevealIndex >= game.players.length) {
-            // Start new round
             startNewRound(gameId);
             return;
         }
@@ -349,7 +344,6 @@ io.on('connection', (socket) => {
         game.currentFullRanking = null;
         game.state = 'guessing';
         console.log(`Game ${gameId}: Starting guess for ranker ${ranker}, target ${target}`);
-        // Broadcast full state to all players
         game.players.forEach(player => {
             const playerSocket = Array.from(io.sockets.sockets.values())
                 .find(s => s.playerName === player && s.rooms.has(gameId));
@@ -357,7 +351,7 @@ io.on('connection', (socket) => {
                 playerSocket.emit('gameState', {
                     ...game,
                     myQuestion: game.questionAssignments[player],
-                    hasSubmittedGuess: false // Reset for new guessing phase
+                    hasSubmittedGuess: false
                 });
             }
         });
@@ -387,8 +381,8 @@ io.on('connection', (socket) => {
                 playerSocket.emit('gameState', {
                     ...game,
                     myQuestion: game.questionAssignments[player] || '',
-                    hasSubmittedRanking: false, // Explicitly reset
-                    hasSubmittedGuess: false // Reset for new round
+                    hasSubmittedRanking: false,
+                    hasSubmittedGuess: false
                 });
                 console.log(`Game ${gameId}: Sent new question to ${player}: ${game.questionAssignments[player]}`);
             } else {
@@ -414,17 +408,36 @@ io.on('connection', (socket) => {
         const nonRankerPlayers = game.players.filter(p => p !== game.currentRanker);
         if (Object.keys(game.currentGuesses).length === nonRankerPlayers.length) {
             // Award points
+            let correctGuessCount = 0;
             Object.keys(game.currentGuesses).forEach(guesser => {
                 if (game.currentGuesses[guesser] === game.actualPosition) {
-                    game.points[guesser] = (game.points[guesser] || 0) + 1;
+                    game.points[guesser] = (game.points[guesser] || 0) + 1; // 1 point for correct guess
+                    correctGuessCount++;
                 }
             });
+            // Award ranker points: 1 per correct guess, capped at 3
+            const rankerPoints = Math.min(correctGuessCount, 3);
+            game.points[game.currentRanker] = (game.points[game.currentRanker] || 0) + rankerPoints;
+            console.log(`Game ${gameId}: Awarded ${rankerPoints} points to ranker ${game.currentRanker} (${correctGuessCount} correct guesses)`);
             game.players.sort((a, b) => (game.points[b] || 0) - (game.points[a] || 0));
             game.currentFullRanking = game.rankings[game.currentRanker];
             game.state = 'reveal';
-            io.to(gameId).emit('gameState', game);
+            game.players.forEach(player => {
+                const playerSocket = Array.from(io.sockets.sockets.values())
+                    .find(s => s.playerName === player && s.rooms.has(gameId));
+                if (playerSocket) {
+                    playerSocket.emit('gameState', {
+                        ...game,
+                        myQuestion: game.questionAssignments[player],
+                        hasSubmittedGuess: false
+                    });
+                }
+            });
         } else {
-            io.to(gameId).emit('gameState', game);
+            io.to(gameId).emit('gameState', {
+                ...game,
+                myQuestion: game.questionAssignments[socket.playerName]
+            });
         }
     });
 
