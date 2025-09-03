@@ -52,6 +52,13 @@ const App = () => {
                     console.log(`Player ${playerName}: Reset hasSubmittedRanking for new round`);
                 }
             }
+            // Reset hasSubmittedGuess for new guessing state
+            if (stateData.state === 'guessing') {
+                if (stateData.hasSubmittedGuess === false) {
+                    setHasSubmittedGuess(false);
+                    console.log(`Player ${playerName}: Reset hasSubmittedGuess for new guessing phase`);
+                }
+            }
         });
 
         newSocket.on('rankingSubmitted', () => {

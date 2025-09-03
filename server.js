@@ -356,7 +356,8 @@ io.on('connection', (socket) => {
             if (playerSocket) {
                 playerSocket.emit('gameState', {
                     ...game,
-                    myQuestion: game.questionAssignments[player]
+                    myQuestion: game.questionAssignments[player],
+                    hasSubmittedGuess: false // Reset for new guessing phase
                 });
             }
         });
@@ -386,7 +387,8 @@ io.on('connection', (socket) => {
                 playerSocket.emit('gameState', {
                     ...game,
                     myQuestion: game.questionAssignments[player] || '',
-                    hasSubmittedRanking: false // Explicitly reset
+                    hasSubmittedRanking: false, // Explicitly reset
+                    hasSubmittedGuess: false // Reset for new round
                 });
                 console.log(`Game ${gameId}: Sent new question to ${player}: ${game.questionAssignments[player]}`);
             } else {
