@@ -332,10 +332,7 @@ io.on('connection', (socket) => {
             return;
         }
         const ranker = game.rankers[game.currentRevealIndex];
-        let target = game.players[Math.floor(Math.random() * game.players.length)];
-        while (target === ranker) {
-            target = game.players[Math.floor(Math.random() * game.players.length)];
-        }
+        const target = game.players[Math.floor(Math.random() * game.players.length)];
         game.currentRanker = ranker;
         game.currentTarget = target;
         game.currentQuestion = game.questionAssignments[ranker];
