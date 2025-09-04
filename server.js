@@ -54,16 +54,16 @@ function generateGameId() {
 const globalUsedQuestions = new Set();
 const questionCache = [];
 
-async function selectQuestion(gameId) {
+async function selectQuestions(gameId, numQuestions) {
     const game = games[gameId];
     if (!game) {
         console.error(`Game ${gameId}: Game not found`);
-        return null;
+        return [];
     }
 
     if (!process.env.GROQ_API_KEY) {
         console.error(`Game ${gameId}: GROQ_API_KEY not set, falling back to question pool`);
-        return selectFromQuestionPool(gameId, game);
+        return selectFromQuestionPool(gameId, game, numQuestions);
     }
 
     const usedQuestions = game.usedQuestions || new Set();
@@ -72,17 +72,24 @@ async function selectQuestion(gameId) {
 
     console.log(`Game ${gameId}: Free memory: ${os.freemem() / 1024 / 1024} MB, Total memory: ${os.totalmem() / 1024 / 1024} MB`);
 
-    // Check cache
-    while (questionCache.length > 0) {
+    // Check cache for enough questions
+    const cachedQuestions = [];
+    while (questionCache.length > 0 && cachedQuestions.length < numQuestions) {
         const cachedQuestion = questionCache.shift();
         if (!usedQuestions.has(cachedQuestion) && !globalUsedQuestions.has(cachedQuestion)) {
+            cachedQuestions.push(cachedQuestion);
             usedQuestions.add(cachedQuestion);
             globalUsedQuestions.add(cachedQuestion);
             console.log(`Game ${gameId}: Used cached question: ${cachedQuestion}`);
-            return cachedQuestion;
         }
     }
+    if (cachedQuestions.length >= numQuestions) {
+        console.log(`Game ${gameId}: Found ${cachedQuestions.length} questions from cache`);
+        return cachedQuestions.slice(0, numQuestions);
+    }
 
+    // Need to fetch more questions from API
+    const questionsNeeded = numQuestions - cachedQuestions.length;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             const timestamp = Date.now();
@@ -94,14 +101,14 @@ async function selectQuestion(gameId) {
                 .join('\n');
 
             const prompt = `
-        You are a game question generator. Return ONLY a valid JSON object with one field: "question". The "question" must be phrased as "Who is the most likely to..." and can be either positive/aspirational or humorous/quirky. Generate highly unique and varied questions, avoiding any repetition or similarity to previous outputs, examples, or common themes. Do NOT include any text, markdown, backticks, code blocks, comments, explanations, or conversational responses. If you cannot generate the requested output, return an empty JSON object {}.
+        You are a game question generator. Return ONLY a valid JSON object with one field: "questions", containing an array of ${questionsNeeded} unique questions. Each question must be phrased as "Who is the most likely to..." and can be either positive/aspirational or humorous/quirky. Ensure all questions are highly unique, varied, and avoid repetition or similarity to previous outputs, examples, or common themes. Do NOT include any text, markdown, backticks, code blocks, comments, explanations, or conversational responses. If you cannot generate the requested output, return an empty JSON object {}.
         Examples:
         ${examples}
         Random seed for uniqueness: ${randomSeed}
-        Output: {"question": "<your unique question>"}
+        Output: {"questions": ["<question1>", "<question2>", ...]}
       `;
 
-            console.log(`Game ${gameId}: Sending prompt to Groq API (attempt ${attempt})`);
+            console.log(`Game ${gameId}: Sending prompt to Groq API for ${questionsNeeded} questions (attempt ${attempt})`);
 
             const response = await axios.post(
                 'https://api.groq.com/openai/v1/chat/completions',
@@ -135,45 +142,62 @@ async function selectQuestion(gameId) {
             let questionData;
             try {
                 questionData = JSON.parse(responseText);
-                if (!questionData.question) {
-                    throw new Error('Missing required field in JSON');
+                if (!questionData.questions || !Array.isArray(questionData.questions) || questionData.questions.length < questionsNeeded) {
+                    throw new Error('Missing or insufficient questions in JSON');
                 }
-                if (!questionData.question.startsWith('Who is the most likely to')) {
-                    throw new Error('Question does not follow required format');
+                for (const q of questionData.questions) {
+                    if (!q || typeof q !== 'string' || !q.startsWith('Who is the most likely to')) {
+                        throw new Error('Invalid question format');
+                    }
                 }
             } catch (parseError) {
                 console.error(`Game ${gameId}: JSON parse error: ${parseError.message}`);
                 continue;
             }
 
-            const questionKey = questionData.question;
+            const newQuestions = questionData.questions;
+            const validQuestions = [];
 
-            if (usedQuestions.has(questionKey) || globalUsedQuestions.has(questionKey)) {
-                console.log(`Game ${gameId}: Generated question is a duplicate, retrying (${attempt}/${maxRetries})`);
-                continue;
-            }
+            // Validate uniqueness and similarity
+            for (const question of newQuestions) {
+                if (usedQuestions.has(question) || globalUsedQuestions.has(question)) {
+                    console.log(`Game ${gameId}: Generated question is a duplicate: ${question}`);
+                    continue;
+                }
 
-            let isSimilar = false;
-            for (const existingKey of globalUsedQuestions) {
-                const similarity = stringSimilarity.compareTwoStrings(questionKey, existingKey);
-                if (similarity > 0.7) {
-                    isSimilar = true;
-                    console.log(`Game ${gameId}: Question too similar to existing (${existingKey}), similarity: ${similarity}. Retrying (${attempt}/${maxRetries})`);
-                    break;
+                let isSimilar = false;
+                for (const existingKey of globalUsedQuestions) {
+                    const similarity = stringSimilarity.compareTwoStrings(question, existingKey);
+                    if (similarity > 0.7) {
+                        isSimilar = true;
+                        console.log(`Game ${gameId}: Question too similar to existing (${existingKey}), similarity: ${similarity}`);
+                        break;
+                    }
+                }
+                if (!isSimilar) {
+                    validQuestions.push(question);
+                    usedQuestions.add(question);
+                    globalUsedQuestions.add(question);
+                    console.log(`Game ${gameId}: Accepted question: ${question}`);
                 }
             }
 
-            if (isSimilar) {
-                continue;
+            // Cache extra questions
+            if (validQuestions.length > questionsNeeded) {
+                questionCache.push(...validQuestions.slice(questionsNeeded));
+                console.log(`Game ${gameId}: Cached ${validQuestions.length - questionsNeeded} extra questions`);
             }
 
-            questionCache.push(questionKey);
-            usedQuestions.add(questionKey);
-            globalUsedQuestions.add(questionKey);
-            console.log(`Game ${gameId}: Generated question: ${questionKey}`);
-            return questionKey;
+            // Combine with cached questions
+            const allQuestions = [...cachedQuestions, ...validQuestions.slice(0, questionsNeeded)];
+            if (allQuestions.length >= numQuestions) {
+                console.log(`Game ${gameId}: Successfully fetched ${allQuestions.length} questions`);
+                return allQuestions.slice(0, numQuestions);
+            }
+
+            console.log(`Game ${gameId}: Not enough valid questions (${allQuestions.length}/${numQuestions}), retrying (${attempt}/${maxRetries})`);
         } catch (error) {
-            console.error(`Game ${gameId}: Error generating question with Groq API (attempt ${attempt}):`, {
+            console.error(`Game ${gameId}: Error generating questions with Groq API (attempt ${attempt}):`, {
                 message: error.message,
                 status: error.response?.status,
                 statusText: error.response?.statusText,
@@ -183,51 +207,54 @@ async function selectQuestion(gameId) {
     }
 
     console.log(`Game ${gameId}: Falling back to question pool after ${maxRetries} attempts`);
-    return selectFromQuestionPool(gameId, game);
+    return selectFromQuestionPool(gameId, game, numQuestions);
 }
 
-function selectFromQuestionPool(gameId, game) {
+function selectFromQuestionPool(gameId, game, numQuestions) {
     const usedQuestions = game.usedQuestions || new Set();
     const availableQuestions = questionPool.filter(
         q => !usedQuestions.has(q) && !globalUsedQuestions.has(q)
     );
 
-    if (availableQuestions.length === 0) {
+    if (availableQuestions.length < numQuestions) {
         const availableFallbacks = fallbackQuestions.filter(
             q => !usedQuestions.has(q) && !globalUsedQuestions.has(q)
         );
-        if (availableFallbacks.length > 0) {
-            const randomIndex = Math.floor(Math.random() * availableFallbacks.length);
-            const selectedQuestion = availableFallbacks[randomIndex];
-            usedQuestions.add(selectedQuestion);
-            globalUsedQuestions.add(selectedQuestion);
-            console.log(`Game ${gameId}: Using fallback question: ${selectedQuestion}`);
-            return selectedQuestion;
+        const combinedQuestions = [...availableQuestions, ...availableFallbacks];
+        if (combinedQuestions.length < numQuestions) {
+            console.log(`Game ${gameId}: Not enough unique questions available (${combinedQuestions.length}/${numQuestions})`);
+            io.to(gameId).emit('gameState', { ...game, noMoreQuestions: true });
+            return [];
         }
-        console.log(`Game ${gameId}: No more unique questions available`);
-        io.to(gameId).emit('gameState', { ...game, noMoreQuestions: true });
-        return null;
+        const selectedQuestions = combinedQuestions
+            .sort(() => Math.random() - 0.5)
+            .slice(0, numQuestions);
+        selectedQuestions.forEach(q => {
+            usedQuestions.add(q);
+            globalUsedQuestions.add(q);
+            console.log(`Game ${gameId}: Selected question from pool/fallback: ${q}`);
+        });
+        return selectedQuestions;
     }
 
-    const randomIndex = Math.floor(Math.random() * availableQuestions.length);
-    const selectedQuestion = availableQuestions[randomIndex];
-    usedQuestions.add(selectedQuestion);
-    globalUsedQuestions.add(selectedQuestion);
-    console.log(`Game ${gameId}: Selected question from pool: ${selectedQuestion}`);
-    return selectedQuestion;
+    const selectedQuestions = availableQuestions
+        .sort(() => Math.random() - 0.5)
+        .slice(0, numQuestions);
+    selectedQuestions.forEach(q => {
+        usedQuestions.add(q);
+        globalUsedQuestions.add(q);
+        console.log(`Game ${gameId}: Selected question from pool: ${q}`);
+    });
+    return selectedQuestions;
 }
 
 async function assignQuestions(gameId) {
     const game = games[gameId];
     const numPlayers = game.players.length;
-    const questions = [];
-    for (let i = 0; i < numPlayers; i++) {
-        const q = await selectQuestion(gameId);
-        if (!q) {
-            console.error(`Game ${gameId}: Failed to select question for player ${i + 1}`);
-            return false;
-        }
-        questions.push(q);
+    const questions = await selectQuestions(gameId, numPlayers);
+    if (questions.length < numPlayers) {
+        console.error(`Game ${gameId}: Failed to fetch enough questions (${questions.length}/${numPlayers})`);
+        return false;
     }
     // Shuffle and assign
     questions.sort(() => Math.random() - 0.5);
