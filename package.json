@@ -12,9 +12,6 @@
     "socket.io": "^4.8.1",
     "string-similarity": "^4.0.4"
   },
-  "engines": {
-    "node": "18.x"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC"

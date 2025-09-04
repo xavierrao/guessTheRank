@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: guess-the-rank-game
+    env: node
+    branch: main # The branch to auto-deploy (e.g., main)
+    repo: https://github.com/xavierrao/guessTheRank # Replace with your repository URL
+    plan: free # or starter, pro, etc., depending on your Render plan
+    envVars:
+      - key: NODE_VERSION
+        value: 20 
+      - key: PORT
+        value: 3000 # The port your server uses
+      - key: GROQ_API_KEY
+        sync: false # Prompt for the API key in Render's dashboard
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true # Enable auto-deployment for pushes to the specified branch
+    pullRequestPreviewsEnabled: true # Enable PR preview environments
