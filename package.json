@@ -1,9 +1,21 @@
 {
+  "name": "guess-the-rank-game",
+  "version": "1.0.0",
+  "description": "Guess the Rank Game",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
     "axios": "^1.11.0",
-    "express": "^5.1.0",
-    "os": "^0.1.2",
+    "express": "^4.21.2",
     "socket.io": "^4.8.1",
     "string-similarity": "^4.0.4"
-  }
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
