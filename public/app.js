@@ -464,7 +464,7 @@ const App = () => {
 
                             <button
                                 onClick={submitRanking}
-                                className="btn btn-primary btn-full"
+                                className={`btn btn-full ${ranking.length === players.length ? 'btn-primary' : 'btn-secondary'}`}
                                 style={{ marginTop: 8 }}
                                 disabled={ranking.length !== players.length}
                             >
