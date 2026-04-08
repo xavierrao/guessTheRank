@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ & How to Play — Guess the Rank</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+    <div class="page-wrap">
+        <main class="app-wrap">
+            <button onclick="window.close(); window.location.href='/';" class="home-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                Home
+            </button>
+
+            <h1 class="page-title">FAQ & How to Play</h1>
+            <p class="page-subtitle">Everything you need to know</p>
+
+            <div class="card faq-quick-start">
+                <div class="question-tag" style="margin-bottom: 10px;">⚡ Quick Start</div>
+                <ol class="faq-steps">
+                    <li>Enter your name and create or join a game</li>
+                    <li>Share the Game ID with friends</li>
+                    <li>The host starts the round</li>
+                    <li>Read your question and drag players into your ranked order</li>
+                    <li>Guess where a random player ranked someone else</li>
+                    <li>Scores are revealed — repeat!</li>
+                </ol>
+            </div>
+
+            <div class="faq-list">
+                <div class="card faq-card">
+                    <div class="faq-question">How do I start a game?</div>
+                    <div class="faq-answer">Enter your name on the home screen and click "Create Game". Share the Game
+                        ID with your friends — they enter their name and the ID to join. Once everyone is in, the host
+                        clicks "Start Game".</div>
+                </div>
+                <div class="card faq-card">
+                    <div class="faq-question">How many players do you need?</div>
+                    <div class="faq-answer">The game works best with 3 or more players. With only 2 players the ranking
+                        mechanic becomes too simple.</div>
+                </div>
+                <div class="card faq-card">
+                    <div class="faq-question">How does ranking work?</div>
+                    <div class="faq-answer">Each player gets a unique "Who is most likely to..." question and secretly
+                        ranks all players from most likely (#1) to least likely. Drag the player tiles into your
+                        preferred order, then submit.</div>
+                </div>
+                <div class="card faq-card">
+                    <div class="faq-question">How does guessing work?</div>
+                    <div class="faq-answer">After everyone ranks, one player's ranking is revealed at a time. A random
+                        target player is chosen and everyone (except the ranker) guesses what position the ranker placed
+                        that target. Pick a number from #1 to however many players there are.</div>
+                </div>
+                <div class="card faq-card">
+                    <div class="faq-question">How are points scored?</div>
+                    <div class="faq-answer">Guessers earn 1 point for correctly identifying the exact rank position.
+                        The ranker earns 1 point for each correct guess, up to a maximum of 3 points per reveal.</div>
+                </div>
+                <div class="card faq-card">
+                    <div class="faq-question">Can the ranker guess?</div>
+                    <div class="faq-answer">No — the ranker sits out the guessing phase for their own reveal, since
+                        they already know the answer. They earn points based on how many others guess correctly.</div>
+                </div>
+                <div class="card faq-card">
+                    <div class="faq-question">What happens if the game goes inactive?</div>
+                    <div class="faq-answer">Games are automatically deleted after 1 hour of inactivity. If this happens
+                        you will be returned to the home screen.</div>
+                </div>
+                <div class="card faq-card">
+                    <div class="faq-question">Can I rejoin if I leave?</div>
+                    <div class="faq-answer">Yes — if you close the tab or navigate away, you have a 15-second window
+                        to return. Navigate back to the game URL or re-enter your Game ID. Your name is saved
+                        automatically in your browser.</div>
+                </div>
+                <div class="card faq-card">
+                    <div class="faq-question">Where do the questions come from?</div>
+                    <div class="faq-answer">Questions are generated in real time using AI (via the Groq API). Each
+                        question is checked for similarity to previous ones to keep things fresh. If the AI is
+                        unavailable, the game falls back to a built-in question pool.</div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <span>©
+                <script>document.write(new Date().getFullYear())</script> Guess the Rank
+            </span>
+            <span class="footer-dot">·</span>
+            <a href="/faq" class="footer-link">FAQ & How to Play</a>
+            <span class="footer-dot">·</span>
+            <span>v2.0.0</span>
+        </footer>
+    </div>
+</body>
+
+</html>

@@ -21,6 +21,8 @@ app.get('/app.js', (req, res) => {
         }
     });
 });
+app.get('/faq', (req, res) => res.sendFile('faq.html', { root: 'public' }));
+app.get('/game/:id', (req, res) => res.sendFile('index.html', { root: 'public' }));
 app.get('/', (req, res) => {
     console.log(`Serving index.html`);
     res.sendFile('index.html', { root: 'public' });
@@ -53,6 +55,24 @@ function generateGameId() {
 
 const globalUsedQuestions = new Set();
 const questionCache = [];
+
+// Inactivity cleanup: delete games inactive for 1 hour
+const GAME_TIMEOUT_MS = 60 * 60 * 1000;
+setInterval(() => {
+    const now = Date.now();
+    for (const gameId in games) {
+        const game = games[gameId];
+        if (game.lastActivity && now - game.lastActivity > GAME_TIMEOUT_MS) {
+            console.log(`Cleaning up inactive game ${gameId}`);
+            io.to(gameId).emit('gameExpired');
+            delete games[gameId];
+        }
+    }
+}, 5 * 60 * 1000);
+
+function touchGame(gameId) {
+    if (games[gameId]) games[gameId].lastActivity = Date.now();
+}
 
 async function selectQuestions(gameId, numQuestions) {
     const game = games[gameId];
@@ -269,11 +289,37 @@ async function assignQuestions(gameId) {
     return true;
 }
 
+// Broadcast game state to all players individually (so each gets their own question)
+function broadcastGameState(gameId, extraPerPlayer = {}) {
+    const game = games[gameId];
+    if (!game) return;
+    game.players.forEach(player => {
+        const playerSocket = Array.from(io.sockets.sockets.values())
+            .find(s => s.playerName === player && s.rooms.has(gameId));
+        if (playerSocket) {
+            playerSocket.emit('gameState', {
+                ...game,
+                myQuestion: game.questionAssignments[player] || '',
+                ...(extraPerPlayer[player] || {})
+            });
+        }
+    });
+    // Also send to spectators
+    (game.spectators || []).forEach(spectator => {
+        const specSocket = Array.from(io.sockets.sockets.values())
+            .find(s => s.playerName === spectator && s.rooms.has(gameId));
+        if (specSocket) {
+            specSocket.emit('gameState', { ...game, isSpectator: true });
+        }
+    });
+}
+
 io.on('connection', (socket) => {
     socket.on('createGame', (playerName) => {
         const gameId = generateGameId();
         games[gameId] = {
             players: [playerName],
+            spectators: [],
             points: { [playerName]: 0 },
             state: 'waiting',
             owner: playerName,
@@ -288,11 +334,13 @@ io.on('connection', (socket) => {
             currentFullRanking: null,
             rankers: [],
             currentRevealIndex: 0,
-            noMoreQuestions: false
+            noMoreQuestions: false,
+            lastActivity: Date.now()
         };
         socket.join(gameId);
         socket.playerName = playerName;
         socket.emit('gameState', { ...games[gameId], gameId });
+        console.log(`Game ${gameId}: Created by ${playerName}`);
     });
 
     socket.on('joinGame', ({ gameId, playerName }) => {
@@ -300,16 +348,81 @@ io.on('connection', (socket) => {
             socket.emit('error', 'Game not found');
             return;
         }
-        if (games[gameId].players.includes(playerName)) {
+        if (games[gameId].players.includes(playerName) || (games[gameId].spectators || []).includes(playerName)) {
             socket.emit('error', 'Name already taken');
             return;
         }
-        games[gameId].players.push(playerName);
-        games[gameId].points[playerName] = 0;
-        games[gameId].state = 'waiting';
+        touchGame(gameId);
+        const game = games[gameId];
         socket.join(gameId);
         socket.playerName = playerName;
-        io.to(gameId).emit('gameState', games[gameId]);
+
+        // If game is in progress, add as spectator
+        if (game.state !== 'waiting') {
+            game.spectators = game.spectators || [];
+            game.spectators.push(playerName);
+            socket.emit('gameState', { ...game, gameId, isSpectator: true });
+            io.to(gameId).emit('spectatorJoined', { playerName });
+            console.log(`Game ${gameId}: ${playerName} joined as spectator`);
+            return;
+        }
+
+        game.players.push(playerName);
+        game.points[playerName] = 0;
+        io.to(gameId).emit('gameState', { ...game, gameId });
+        console.log(`Game ${gameId}: ${playerName} joined`);
+    });
+
+    socket.on('rejoinGame', ({ gameId, playerName }) => {
+        const game = games[gameId];
+        if (!game) {
+            socket.emit('error', 'Game not found or expired');
+            return;
+        }
+        touchGame(gameId);
+
+        // Cancel any pending removal timer for this player
+        if (game.disconnectTimers && game.disconnectTimers[playerName]) {
+            clearTimeout(game.disconnectTimers[playerName]);
+            delete game.disconnectTimers[playerName];
+            console.log(`Game ${gameId}: ${playerName} rejoined within grace period`);
+        }
+
+        socket.join(gameId);
+        socket.playerName = playerName;
+
+        const isPlayer = game.players.includes(playerName);
+        const isSpectator = (game.spectators || []).includes(playerName);
+
+        if (!isPlayer && !isSpectator) {
+            // New join mid-game → spectator
+            if (game.state !== 'waiting') {
+                game.spectators = game.spectators || [];
+                game.spectators.push(playerName);
+                game.points[playerName] = 0;
+                socket.emit('gameState', { ...game, gameId, isSpectator: true });
+                io.to(gameId).emit('spectatorJoined', { playerName });
+                return;
+            }
+            // Waiting room → add as player
+            game.players.push(playerName);
+            game.points[playerName] = 0;
+            io.to(gameId).emit('gameState', { ...game, gameId });
+            return;
+        }
+
+        // Existing player or spectator rejoining
+        socket.emit('gameState', {
+            ...game,
+            gameId,
+            myQuestion: game.questionAssignments[playerName] || '',
+            isSpectator: isSpectator && !isPlayer
+        });
+        console.log(`Game ${gameId}: ${playerName} rejoined`);
+    });
+
+    socket.on('leaveGame', ({ gameId, playerName }) => {
+        handlePlayerLeave(gameId, playerName, true);
     });
 
     socket.on('startGame', async (gameId) => {
@@ -317,6 +430,7 @@ io.on('connection', (socket) => {
             socket.emit('error', 'Only the game owner can start the game');
             return;
         }
+        touchGame(gameId);
         const game = games[gameId];
         const success = await assignQuestions(gameId);
         if (!success) {
@@ -324,16 +438,7 @@ io.on('connection', (socket) => {
             return;
         }
         game.state = 'ranking';
-        game.players.forEach(player => {
-            const playerSocket = Array.from(io.sockets.sockets.values())
-                .find(s => s.playerName === player && s.rooms.has(gameId));
-            if (playerSocket) {
-                playerSocket.emit('gameState', {
-                    ...game,
-                    myQuestion: game.questionAssignments[player]
-                });
-            }
-        });
+        broadcastGameState(gameId);
     });
 
     socket.on('submitRanking', ({ gameId, ranking }) => {
@@ -344,6 +449,7 @@ io.on('connection', (socket) => {
             socket.emit('error', 'Invalid ranking');
             return;
         }
+        touchGame(gameId);
         game.rankings[socket.playerName] = ranking;
         console.log(`Game ${gameId}: ${socket.playerName} submitted ranking`);
         socket.emit('rankingSubmitted', true);
@@ -368,22 +474,24 @@ io.on('connection', (socket) => {
         game.currentFullRanking = null;
         game.state = 'guessing';
         console.log(`Game ${gameId}: Starting guess for ranker ${ranker}, target ${target}`);
-        game.players.forEach(player => {
-            const playerSocket = Array.from(io.sockets.sockets.values())
-                .find(s => s.playerName === player && s.rooms.has(gameId));
-            if (playerSocket) {
-                playerSocket.emit('gameState', {
-                    ...game,
-                    myQuestion: game.questionAssignments[player],
-                    hasSubmittedGuess: false
-                });
-            }
-        });
+        broadcastGameState(gameId, Object.fromEntries(game.players.map(p => [p, { hasSubmittedGuess: false }])));
     }
 
     async function startNewRound(gameId) {
         const game = games[gameId];
         console.log(`Game ${gameId}: Starting new round`);
+
+        // Promote spectators to players
+        if (game.spectators && game.spectators.length > 0) {
+            game.spectators.forEach(name => {
+                if (!game.players.includes(name)) {
+                    game.players.push(name);
+                    if (!game.points[name]) game.points[name] = 0;
+                }
+            });
+            game.spectators = [];
+        }
+
         const success = await assignQuestions(gameId);
         if (!success) {
             console.error(`Game ${gameId}: No more unique questions available for new round`);
@@ -398,21 +506,7 @@ io.on('connection', (socket) => {
         game.currentGuesses = {};
         game.actualPosition = null;
         game.currentFullRanking = null;
-        game.players.forEach(player => {
-            const playerSocket = Array.from(io.sockets.sockets.values())
-                .find(s => s.playerName === player && s.rooms.has(gameId));
-            if (playerSocket) {
-                playerSocket.emit('gameState', {
-                    ...game,
-                    myQuestion: game.questionAssignments[player] || '',
-                    hasSubmittedRanking: false,
-                    hasSubmittedGuess: false
-                });
-                console.log(`Game ${gameId}: Sent new question to ${player}: ${game.questionAssignments[player]}`);
-            } else {
-                console.error(`Game ${gameId}: No socket found for player ${player}`);
-            }
-        });
+        broadcastGameState(gameId, Object.fromEntries(game.players.map(p => [p, { hasSubmittedRanking: false, hasSubmittedGuess: false }])));
     }
 
     socket.on('submitGuess', ({ gameId, guess }) => {
@@ -427,6 +521,7 @@ io.on('connection', (socket) => {
             socket.emit('error', 'Invalid guess');
             return;
         }
+        touchGame(gameId);
         game.currentGuesses[socket.playerName] = guess;
         console.log(`Game ${gameId}: ${socket.playerName} guessed position ${guess}`);
         const nonRankerPlayers = game.players.filter(p => p !== game.currentRanker);
@@ -435,7 +530,7 @@ io.on('connection', (socket) => {
             let correctGuessCount = 0;
             Object.keys(game.currentGuesses).forEach(guesser => {
                 if (game.currentGuesses[guesser] === game.actualPosition) {
-                    game.points[guesser] = (game.points[guesser] || 0) + 1; // 1 point for correct guess
+                    game.points[guesser] = (game.points[guesser] || 0) + 1;
                     correctGuessCount++;
                 }
             });
@@ -446,22 +541,9 @@ io.on('connection', (socket) => {
             game.players.sort((a, b) => (game.points[b] || 0) - (game.points[a] || 0));
             game.currentFullRanking = game.rankings[game.currentRanker];
             game.state = 'reveal';
-            game.players.forEach(player => {
-                const playerSocket = Array.from(io.sockets.sockets.values())
-                    .find(s => s.playerName === player && s.rooms.has(gameId));
-                if (playerSocket) {
-                    playerSocket.emit('gameState', {
-                        ...game,
-                        myQuestion: game.questionAssignments[player],
-                        hasSubmittedGuess: false
-                    });
-                }
-            });
+            broadcastGameState(gameId, Object.fromEntries(game.players.map(p => [p, { hasSubmittedGuess: false }])));
         } else {
-            io.to(gameId).emit('gameState', {
-                ...game,
-                myQuestion: game.questionAssignments[socket.playerName]
-            });
+            io.to(gameId).emit('gameState', game);
         }
     });
 
@@ -472,26 +554,73 @@ io.on('connection', (socket) => {
         }
         const game = games[gameId];
         if (game.state !== 'reveal') return;
+        touchGame(gameId);
         game.currentRevealIndex += 1;
         setNextReveal(gameId);
     });
 
+    function handlePlayerLeave(gameId, playerName, immediate = false) {
+        const game = games[gameId];
+        if (!game) return;
+
+        const doRemove = () => {
+            const game = games[gameId];
+            if (!game) return;
+
+            // Remove from spectators if spectating
+            const specIdx = (game.spectators || []).indexOf(playerName);
+            if (specIdx !== -1) {
+                game.spectators.splice(specIdx, 1);
+                io.to(gameId).emit('gameState', game);
+                return;
+            }
+
+            const idx = game.players.indexOf(playerName);
+            if (idx === -1) return;
+
+            game.players.splice(idx, 1);
+            delete game.points[playerName];
+            delete game.questionAssignments[playerName];
+            delete game.rankings[playerName];
+
+            if (game.players.length === 0) {
+                console.log(`Game ${gameId}: No players left, deleting game`);
+                delete games[gameId];
+                return;
+            }
+
+            // Reassign owner if needed
+            if (game.owner === playerName) {
+                game.owner = game.players[0];
+                console.log(`Game ${gameId}: Owner reassigned to ${game.owner}`);
+                io.to(gameId).emit('ownerChanged', { newOwner: game.owner });
+            }
+
+            io.to(gameId).emit('gameState', game);
+            console.log(`Game ${gameId}: ${playerName} removed`);
+        };
+
+        if (immediate) {
+            doRemove();
+        } else {
+            // 15-second grace period
+            game.disconnectTimers = game.disconnectTimers || {};
+            game.disconnectTimers[playerName] = setTimeout(() => {
+                doRemove();
+                if (games[gameId]) delete games[gameId].disconnectTimers[playerName];
+            }, 15000);
+            console.log(`Game ${gameId}: ${playerName} disconnected — 15s grace period started`);
+        }
+    }
+
     socket.on('disconnect', () => {
         for (const gameId in games) {
             const game = games[gameId];
-            const index = game.players.indexOf(socket.playerName);
-            if (index !== -1) {
-                game.players.splice(index, 1);
-                delete game.points[socket.playerName];
-                delete game.questionAssignments[socket.playerName];
-                delete game.rankings[socket.playerName];
-                if (game.players.length === 0) {
-                    delete games[gameId];
-                } else {
-                    game.state = game.players.length > 1 ? 'waiting' : 'joining';
-                    game.players.sort((a, b) => (game.points[b] || 0) - (game.points[a] || 0));
-                    io.to(gameId).emit('gameState', game);
-                }
+            if (
+                game.players.includes(socket.playerName) ||
+                (game.spectators || []).includes(socket.playerName)
+            ) {
+                handlePlayerLeave(gameId, socket.playerName, false);
             }
         }
     });
