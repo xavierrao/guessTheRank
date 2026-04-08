@@ -7,13 +7,13 @@
 }
 
 body {
-    background-color: #fff5f0;
+    background-color: #fff1f2;
     color: #2d3a35;
     font-family: 'DM Sans', sans-serif;
     min-height: 100vh;
     background-image:
-        radial-gradient(ellipse at 10% 10%, rgba(232, 82, 58, 0.08) 0%, transparent 50%),
-        radial-gradient(ellipse at 90% 90%, rgba(244, 137, 78, 0.07) 0%, transparent 50%);
+        radial-gradient(ellipse at 10% 10%, rgba(225, 29, 72, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 90%, rgba(251, 113, 133, 0.07) 0%, transparent 50%);
 }
 
 h1,
@@ -32,14 +32,14 @@ h3 {
     font-size: clamp(2rem, 6vw, 3rem);
     font-weight: 800;
     text-align: center;
-    color: #c73d27;
+    color: #be123c;
     margin-bottom: 6px;
     letter-spacing: -0.5px;
 }
 
 .page-subtitle {
     text-align: center;
-    color: #8a7060;
+    color: #9f5060;
     font-size: 0.9rem;
     margin-bottom: 16px;
     letter-spacing: 2px;
@@ -50,12 +50,12 @@ h3 {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: rgba(232, 82, 58, 0.1);
-    border: 1px solid rgba(232, 82, 58, 0.3);
+    background: rgba(225, 29, 72, 0.1);
+    border: 1px solid rgba(225, 29, 72, 0.3);
     border-radius: 100px;
     padding: 6px 16px;
     font-size: 0.85rem;
-    color: #e8523a;
+    color: #e11d48;
     margin-bottom: 16px;
     font-weight: 600;
     letter-spacing: 1px;
@@ -63,17 +63,17 @@ h3 {
 
 .card {
     background: #ffffff;
-    border: 1px solid #e8d5cc;
+    border: 1px solid #fda4af;
     border-radius: 20px;
     padding: 28px;
     margin-bottom: 16px;
-    box-shadow: 0 2px 12px rgba(80, 40, 30, 0.07);
+    box-shadow: 0 2px 12px rgba(80, 30, 40, 0.07);
 }
 
 .input-field {
     width: 100%;
-    background: #fff5f0;
-    border: 1px solid #e8d5cc;
+    background: #fff1f2;
+    border: 1px solid #fda4af;
     border-radius: 12px;
     padding: 14px 18px;
     color: #2d3a35;
@@ -85,12 +85,12 @@ h3 {
 }
 
 .input-field:focus {
-    border-color: #e8523a;
-    box-shadow: 0 0 0 3px rgba(232, 82, 58, 0.15);
+    border-color: #e11d48;
+    box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.15);
 }
 
 .input-field::placeholder {
-    color: #8a7060;
+    color: #9f5060;
 }
 
 .btn {
@@ -110,21 +110,21 @@ h3 {
 }
 
 .btn-primary {
-    background: #e8523a;
+    background: #e11d48;
     color: white;
-    box-shadow: 0 4px 16px rgba(232, 82, 58, 0.25);
+    box-shadow: 0 4px 16px rgba(225, 29, 72, 0.25);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    background: #c73d27;
-    box-shadow: 0 8px 24px rgba(232, 82, 58, 0.3);
+    background: #be123c;
+    box-shadow: 0 8px 24px rgba(225, 29, 72, 0.3);
 }
 
 .btn-secondary {
-    background: #fde8e0;
+    background: #ffe4e6;
     color: #2d3a35;
-    border: 1px solid #e8d5cc;
+    border: 1px solid #fda4af;
 }
 
 .btn-secondary:hover {
@@ -133,14 +133,14 @@ h3 {
 }
 
 .btn-green {
-    background: #f4894e;
+    background: #fb7185;
     color: white;
-    box-shadow: 0 4px 16px rgba(244, 137, 78, 0.2);
+    box-shadow: 0 4px 16px rgba(251, 113, 133, 0.2);
 }
 
 .btn-green:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(244, 137, 78, 0.3);
+    box-shadow: 0 8px 24px rgba(251, 113, 133, 0.3);
 }
 
 .btn-full {
@@ -159,7 +159,7 @@ h3 {
     font-weight: 700;
     letter-spacing: 2.5px;
     text-transform: uppercase;
-    color: #8a7060;
+    color: #9f5060;
     margin-bottom: 12px;
 }
 
@@ -174,15 +174,15 @@ h3 {
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    background: #fff5f0;
+    background: #fff1f2;
     border-radius: 12px;
-    border: 1px solid #e8d5cc;
+    border: 1px solid #fda4af;
     transition: background 0.2s;
 }
 
 .player-row.is-me {
-    background: rgba(232, 82, 58, 0.08);
-    border-color: rgba(232, 82, 58, 0.3);
+    background: rgba(225, 29, 72, 0.08);
+    border-color: rgba(225, 29, 72, 0.3);
 }
 
 .player-score {
@@ -191,7 +191,7 @@ h3 {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #e8523a;
+    background: #e11d48;
     border-radius: 8px;
     font-family: 'Playfair Display', serif;
     font-size: 1rem;
@@ -216,7 +216,7 @@ h3 {
 
 .player-vote-label {
     font-size: 0.75rem;
-    color: #8a7060;
+    color: #9f5060;
     white-space: nowrap;
     flex-shrink: 0;
 }
@@ -224,7 +224,7 @@ h3 {
 .player-vote-val {
     font-size: 0.8rem;
     font-weight: 600;
-    color: #e8523a;
+    color: #e11d48;
     max-width: 90px;
     white-space: nowrap;
     overflow: hidden;
@@ -235,7 +235,7 @@ h3 {
 .player-guess-val {
     font-size: 0.8rem;
     font-weight: 600;
-    color: #f4894e;
+    color: #fb7185;
     max-width: 90px;
     white-space: nowrap;
     overflow: hidden;
@@ -244,8 +244,8 @@ h3 {
 }
 
 .question-card {
-    background: rgba(232, 82, 58, 0.08);
-    border: 1px solid rgba(232, 82, 58, 0.25);
+    background: rgba(225, 29, 72, 0.08);
+    border: 1px solid rgba(225, 29, 72, 0.25);
     border-radius: 16px;
     padding: 20px 24px;
     margin-bottom: 16px;
@@ -256,7 +256,7 @@ h3 {
     font-weight: 700;
     letter-spacing: 2px;
     text-transform: uppercase;
-    color: #e8523a;
+    color: #e11d48;
     margin-bottom: 8px;
 }
 
@@ -269,15 +269,15 @@ h3 {
 }
 
 .question-secondary {
-    background: rgba(244, 137, 78, 0.07);
-    border: 1px solid rgba(244, 137, 78, 0.2);
+    background: rgba(251, 113, 133, 0.07);
+    border: 1px solid rgba(251, 113, 133, 0.2);
     border-radius: 14px;
     padding: 16px 20px;
     margin-bottom: 12px;
 }
 
 .question-secondary .question-tag {
-    color: #f4894e;
+    color: #fb7185;
 }
 
 .vote-grid {
@@ -289,8 +289,8 @@ h3 {
 .vote-btn {
     padding: 11px 20px;
     border-radius: 10px;
-    border: 1px solid #e8d5cc;
-    background: #fff5f0;
+    border: 1px solid #fda4af;
+    background: #fff1f2;
     color: #2d3a35;
     font-family: 'DM Sans', sans-serif;
     font-size: 0.9rem;
@@ -300,29 +300,29 @@ h3 {
 }
 
 .vote-btn:hover {
-    background: rgba(232, 82, 58, 0.1);
-    border-color: rgba(232, 82, 58, 0.4);
+    background: rgba(225, 29, 72, 0.1);
+    border-color: rgba(225, 29, 72, 0.4);
     transform: translateY(-2px);
 }
 
 .vote-btn.selected {
-    background: #e8523a;
+    background: #e11d48;
     border-color: transparent;
     color: white;
-    box-shadow: 0 4px 14px rgba(232, 82, 58, 0.3);
+    box-shadow: 0 4px 14px rgba(225, 29, 72, 0.3);
 }
 
 .vote-btn.guess-selected {
-    background: #f4894e;
+    background: #fb7185;
     border-color: transparent;
     color: white;
     font-weight: 700;
-    box-shadow: 0 4px 14px rgba(244, 137, 78, 0.25);
+    box-shadow: 0 4px 14px rgba(251, 113, 133, 0.25);
 }
 
 .divider {
     border: none;
-    border-top: 1px solid #e8d5cc;
+    border-top: 1px solid #fda4af;
     margin: 20px 0;
 }
 
@@ -341,13 +341,13 @@ h3 {
 }
 
 .alert-warning {
-    background: rgba(244, 137, 78, 0.1);
-    border: 1px solid rgba(244, 137, 78, 0.3);
+    background: rgba(251, 113, 133, 0.1);
+    border: 1px solid rgba(251, 113, 133, 0.3);
     color: #8b3010;
 }
 
 .waiting-hint {
-    color: #8a7060;
+    color: #9f5060;
     font-size: 0.9rem;
     text-align: center;
     margin-top: 8px;
@@ -356,8 +356,8 @@ h3 {
 .reveal-imposter {
     text-align: center;
     padding: 18px;
-    background: rgba(232, 82, 58, 0.08);
-    border: 1px solid rgba(232, 82, 58, 0.25);
+    background: rgba(225, 29, 72, 0.08);
+    border: 1px solid rgba(225, 29, 72, 0.25);
     border-radius: 16px;
     margin-bottom: 16px;
 }
@@ -366,7 +366,7 @@ h3 {
     font-size: 0.7rem;
     letter-spacing: 2px;
     text-transform: uppercase;
-    color: #8a7060;
+    color: #9f5060;
     margin-bottom: 6px;
 }
 
@@ -374,16 +374,16 @@ h3 {
     font-family: 'Playfair Display', serif;
     font-size: 1.8rem;
     font-weight: 800;
-    color: #e8523a;
+    color: #e11d48;
 }
 
 .count-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: rgba(232, 82, 58, 0.12);
-    border: 1px solid rgba(232, 82, 58, 0.3);
-    color: #e8523a;
+    background: rgba(225, 29, 72, 0.12);
+    border: 1px solid rgba(225, 29, 72, 0.3);
+    color: #e11d48;
     border-radius: 100px;
     padding: 2px 12px;
     font-size: 0.8rem;
@@ -396,14 +396,14 @@ h3 {
     align-items: center;
     gap: 6px;
     background: #fff;
-    border: 1px solid #e8d5cc;
+    border: 1px solid #fda4af;
     border-radius: 10px;
     padding: 8px 14px;
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: 600;
-    color: #e8523a;
-    box-shadow: 0 2px 8px rgba(80, 40, 30, 0.08);
+    color: #e11d48;
+    box-shadow: 0 2px 8px rgba(80, 30, 40, 0.08);
     font-family: 'DM Sans', sans-serif;
     transition: all 0.2s;
     margin-bottom: 16px;
@@ -411,29 +411,29 @@ h3 {
 }
 
 .home-btn:hover {
-    background: #fff5f0;
+    background: #fff1f2;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(80, 40, 30, 0.12);
+    box-shadow: 0 4px 12px rgba(80, 30, 40, 0.12);
 }
 
 .footer {
 
     padding: 12px 0px;
-    border-top: 1px solid #e8d5cc;
+    border-top: 1px solid #fda4af;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     gap: 8px 20px;
     font-size: 0.90rem;
-    color: #8a7060;
+    color: #9f5060;
     font-family: 'DM Sans', sans-serif;
 }
 
 .footer-link {
     background: none;
     border: none;
-    color: #e8523a;
+    color: #e11d48;
     cursor: pointer;
     font-size: 0.78rem;
     font-family: 'DM Sans', sans-serif;
@@ -454,8 +454,8 @@ h3 {
 }
 
 .faq-quick-start {
-    background: rgba(232, 82, 58, 0.06);
-    border: 1px solid rgba(232, 82, 58, 0.2);
+    background: rgba(225, 29, 72, 0.06);
+    border: 1px solid rgba(225, 29, 72, 0.2);
     margin-bottom: 24px;
 }
 
@@ -485,7 +485,7 @@ h3 {
 
 .faq-answer {
     font-size: 0.9rem;
-    color: #8a7060;
+    color: #9f5060;
     line-height: 1.6;
 }
 
@@ -496,7 +496,7 @@ h3 {
 .player-count-tip {
     text-align: center;
     font-size: 0.85rem;
-    color: #8a7060;
+    color: #9f5060;
     margin-top: 4px;
 }
 
@@ -547,14 +547,14 @@ body {
 
 .waiting-tip {
     font-size: 0.8rem;
-    color: #8a7060;
+    color: #9f5060;
     margin-bottom: 14px;
 }
 
 .spectator-bar {
     text-align: center;
     font-size: 0.8rem;
-    color: #8a7060;
+    color: #9f5060;
     margin-bottom: 8px;
 }
 
@@ -588,7 +588,7 @@ body {
 
 .copied-label {
     margin-left: 6px;
-    color: #f4894e;
+    color: #fb7185;
     font-size: 0.8rem;
     font-weight: 600;
 }
@@ -607,9 +607,9 @@ body {
     left: 50%;
     transform: translateX(-50%);
     background: #fff;
-    border: 1px solid #e8d5cc;
+    border: 1px solid #fda4af;
     border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(80, 40, 30, 0.12);
+    box-shadow: 0 4px 16px rgba(80, 30, 40, 0.12);
     z-index: 100;
     min-width: 160px;
     overflow: hidden;
@@ -636,7 +636,7 @@ body {
 }
 
 .copy-menu-btn:hover {
-    background: #fff5f0;
+    background: #fff1f2;
 }
 
 .question-text--sm {
@@ -645,7 +645,7 @@ body {
 
 .question-text--accent {
     font-size: 1rem;
-    color: #f4894e;
+    color: #fb7185;
 }
 
 .question-tag--mb6 {
@@ -653,7 +653,7 @@ body {
 }
 
 .question-tag--accent {
-    color: #f4894e;
+    color: #fb7185;
     margin-bottom: 6px;
 }
 
