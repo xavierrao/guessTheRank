@@ -132,13 +132,13 @@ h3 {
     transform: translateY(-2px);
 }
 
-.btn-green {
-    background: #fb7185;
+.btn-next {
+    background: #fc1235;
     color: white;
     box-shadow: 0 4px 16px rgba(251, 113, 133, 0.2);
 }
 
-.btn-green:hover {
+.btn-next:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(251, 113, 133, 0.3);
 }

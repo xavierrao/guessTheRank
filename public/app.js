@@ -583,7 +583,7 @@ const App = () => {
                     </div>
 
                     {isOwner && (
-                        <button onClick={nextReveal} className="btn btn-green btn-full">
+                        <button onClick={nextReveal} className="btn btn-next btn-full">
                             ➡️ Next
                         </button>
                     )}
