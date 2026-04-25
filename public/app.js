@@ -141,6 +141,10 @@ const App = () => {
                 setSelectedGuess(null);
                 setRanking([]);
             }
+            if (state === 'guessing') {
+                setSelectedGuess(null);
+                setHasSubmittedGuess(submittedGuess || false);
+            }
             if (submitted !== undefined) setHasSubmittedRanking(submitted);
             if (submittedGuess !== undefined) setHasSubmittedGuess(submittedGuess);
             if (receivedGameId) {
@@ -493,7 +497,7 @@ const App = () => {
 
                     <div className="card">
                         <div className="section-label" style={{ marginBottom: 4 }}>
-                            Where did <strong>{currentTarget}</strong> rank?
+                            Where did <strong>{currentRanker}</strong> rank <strong>{currentTarget}</strong>?
                         </div>
                         <p className="waiting-tip">{guessedPositions.length} / {numGuessers} guesses in</p>
 
