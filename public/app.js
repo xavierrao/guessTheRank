@@ -48,6 +48,7 @@ const App = () => {
     const [ranking, setRanking] = useState([]);
     const [hasSubmittedRanking, setHasSubmittedRanking] = useState(false);
     const [hasSubmittedGuess, setHasSubmittedGuess] = useState(false);
+    const [guessAccepted, setGuessAccepted] = useState(false);
     const [selectedGuess, setSelectedGuess] = useState(null);
     const [points, setPoints] = useState({});
     const [noMoreQuestions, setNoMoreQuestions] = useState(false);
@@ -143,7 +144,6 @@ const App = () => {
             }
             if (state === 'guessing') {
                 setSelectedGuess(null);
-                setHasSubmittedGuess(submittedGuess || false);
             }
             if (submitted !== undefined) setHasSubmittedRanking(submitted);
             if (submittedGuess !== undefined) setHasSubmittedGuess(submittedGuess);
@@ -243,7 +243,7 @@ const App = () => {
     const submitGuess = () => {
         if (selectedGuess !== null) {
             socket.emit('submitGuess', { gameId, guess: selectedGuess });
-            setHasSubmittedGuess(true);
+            setGuessAccepted(true);
         }
     };
 
@@ -260,6 +260,12 @@ const App = () => {
     useEffect(() => {
         if (gameState === 'ranking') setRanking([]);
     }, [gameState]);
+
+    // Reset guess state when a new guessing turn starts (target changes)
+    useEffect(() => {
+        setSelectedGuess(null);
+        setGuessAccepted(false);
+    }, [currentTarget]);
 
     const PlayerList = ({ showPoints = true }) => (
         <div className="player-list">
@@ -505,8 +511,6 @@ const App = () => {
                             <p className="waiting-hint">👀 Watching this round — you'll play next round.</p>
                         ) : playerName === currentRanker ? (
                             <p className="waiting-hint">You're the ranker this round — wait for others to guess!</p>
-                        ) : hasSubmittedGuess ? (
-                            <p className="waiting-hint">✅ Guess submitted! Waiting for others…</p>
                         ) : (
                             <>
                                 <div className="vote-grid" style={{ marginBottom: 12 }}>
@@ -520,6 +524,11 @@ const App = () => {
                                         </button>
                                     ))}
                                 </div>
+                                {guessAccepted && (
+                                    <p style={{ fontSize: '0.85rem', color: '#be123c', fontWeight: 600, marginBottom: 10 }}>
+                                        ✅ Guess submitted! Pick a different number to change it.
+                                    </p>
+                                )}
                                 <button
                                     onClick={submitGuess}
                                     className="btn btn-primary btn-full"
