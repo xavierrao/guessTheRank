@@ -99,7 +99,6 @@ async function selectQuestions(gameId, numQuestions) {
         if (!usedQuestions.has(cachedQuestion) && !globalUsedQuestions.has(cachedQuestion)) {
             cachedQuestions.push(cachedQuestion);
             usedQuestions.add(cachedQuestion);
-            globalUsedQuestions.add(cachedQuestion);
             console.log(`Game ${gameId}: Used cached question: ${cachedQuestion}`);
         }
     }
@@ -188,7 +187,7 @@ async function selectQuestions(gameId, numQuestions) {
                 let isSimilar = false;
                 for (const existingKey of globalUsedQuestions) {
                     const similarity = stringSimilarity.compareTwoStrings(question, existingKey);
-                    if (similarity > 0.7) {
+                    if (similarity > 0.65) {
                         isSimilar = true;
                         console.log(`Game ${gameId}: Question too similar to existing (${existingKey}), similarity: ${similarity}`);
                         break;
@@ -197,7 +196,6 @@ async function selectQuestions(gameId, numQuestions) {
                 if (!isSimilar) {
                     validQuestions.push(question);
                     usedQuestions.add(question);
-                    globalUsedQuestions.add(question);
                     console.log(`Game ${gameId}: Accepted question: ${question}`);
                 }
             }
@@ -251,7 +249,6 @@ function selectFromQuestionPool(gameId, game, numQuestions) {
             .slice(0, numQuestions);
         selectedQuestions.forEach(q => {
             usedQuestions.add(q);
-            globalUsedQuestions.add(q);
             console.log(`Game ${gameId}: Selected question from pool/fallback: ${q}`);
         });
         return selectedQuestions;
@@ -262,7 +259,6 @@ function selectFromQuestionPool(gameId, game, numQuestions) {
         .slice(0, numQuestions);
     selectedQuestions.forEach(q => {
         usedQuestions.add(q);
-        globalUsedQuestions.add(q);
         console.log(`Game ${gameId}: Selected question from pool: ${q}`);
     });
     return selectedQuestions;
@@ -284,6 +280,7 @@ async function assignQuestions(gameId) {
     game.currentRevealIndex = 0;
     game.players.forEach((player, idx) => {
         game.questionAssignments[player] = questions[idx];
+        globalUsedQuestions.add(questions[idx]);
         console.log(`Game ${gameId}: Assigned question to ${player}: ${questions[idx]}`);
     });
     return true;
@@ -422,7 +419,31 @@ io.on('connection', (socket) => {
     });
 
     socket.on('leaveGame', ({ gameId, playerName }) => {
-        handlePlayerLeave(gameId, playerName, true);
+        handlePlayerLeave(gameId, playerName, false);
+    });
+
+    socket.on('rerollQuestion', async (gameId) => {
+        if (!games[gameId]) return;
+        const game = games[gameId];
+        if (game.state !== 'ranking') return;
+        if (game.rankings[socket.playerName]) return;
+        touchGame(gameId);
+
+        const newQuestions = await selectQuestions(gameId, 1);
+        if (!newQuestions || newQuestions.length === 0) {
+            socket.emit('error', 'No new question available, sorry!');
+            return;
+        }
+
+        game.questionAssignments[socket.playerName] = newQuestions[0];
+        globalUsedQuestions.add(newQuestions[0]);
+        console.log(`Game ${gameId}: ${socket.playerName} got a new question: ${newQuestions[0]}`);
+
+        socket.emit('gameState', {
+            ...game,
+            gameId,
+            myQuestion: newQuestions[0],
+        });
     });
 
     socket.on('startGame', async (gameId) => {
