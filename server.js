@@ -458,6 +458,30 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('rerollQuestion', async (gameId) => {
+        if (!games[gameId]) return;
+        const game = games[gameId];
+        if (game.state !== 'ranking') return;
+        if (game.rankings[socket.playerName]) return; // already submitted, too late
+        touchGame(gameId);
+
+        const newQuestions = await selectQuestions(gameId, 1);
+        if (!newQuestions || newQuestions.length === 0) {
+            socket.emit('error', 'No new question available, sorry!');
+            return;
+        }
+
+        game.questionAssignments[socket.playerName] = newQuestions[0];
+        console.log(`Game ${gameId}: ${socket.playerName} got a new question: ${newQuestions[0]}`);
+
+        // Only send the new question to the player who requested it
+        socket.emit('gameState', {
+            ...game,
+            gameId,
+            myQuestion: newQuestions[0],
+        });
+    });
+
     function setNextReveal(gameId) {
         const game = games[gameId];
         if (game.currentRevealIndex >= game.players.length) {

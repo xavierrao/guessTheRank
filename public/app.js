@@ -432,7 +432,6 @@ const App = () => {
                                 <div className="question-tag">❓ Your Question</div>
                                 <div className="question-text">{myQuestion}</div>
                             </div>
-
                             {ranking.length > 0 && (
                                 <>
                                     <div className="section-label" style={{ marginTop: 16 }}>Your ranking — tap to remove</div>
@@ -475,10 +474,18 @@ const App = () => {
                             <button
                                 onClick={submitRanking}
                                 className={`btn btn-full ${ranking.length === players.length ? 'btn-primary' : 'btn-secondary'}`}
-                                style={{ marginTop: 8 }}
+                                style={{ marginTop: 8, marginBottom: 8 }}
                                 disabled={ranking.length !== players.length}
                             >
                                 {ranking.length === players.length ? 'Submit Ranking' : `Rank all players (${ranking.length}/${players.length})`}
+                            </button>
+
+                            <button
+                                onClick={() => socket.emit('rerollQuestion', gameId)}
+                                className="btn btn-full"
+                                style={{ marginBottom: 8, background: '#fef3c7', border: '1px solid #fcd34d', color: '#92400e' }}
+                            >
+                                🔄 Already seen this question? Get a new one
                             </button>
                         </div>
                     )}
